@@ -7,7 +7,7 @@ content on a source pad.
 
 Requirements
 ------------
-*    gstreamer 1.16.x
+*    gstreamer 1.20.0
 *    Openssl >= 1.1
 
 Usage
