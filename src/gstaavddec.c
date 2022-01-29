@@ -415,7 +415,7 @@ gst_aavd_decrypt_parse_adrm_box (GstAavdDecrypt * self, GstBuffer * adrm)
 static GstAavdKeyPair *
 gst_aavd_decrypt_get_key (GstAavdDecrypt * self, GstBuffer * data)
 {
-  char hexkey[KEY_LENGTH * 2] = { 0 };
+  char hexkey[KEY_LENGTH * 2 + 1] = { 0 };
   guint8 key[KEY_LENGTH];
   gchar *path;
   size_t bytes_read = 0;
@@ -440,7 +440,7 @@ gst_aavd_decrypt_get_key (GstAavdDecrypt * self, GstBuffer * data)
     goto error;
   }
 
-  bytes_read = fread (hexkey, 1, KEY_LENGTH * 2 + 1, key_file);
+  bytes_read = fread (hexkey, 1, sizeof(hexkey), key_file);
 
   if (bytes_read < KEY_LENGTH * 2) {
     GST_ERROR_OBJECT (self, "Failed to read key from file %s", path);
