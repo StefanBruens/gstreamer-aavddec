@@ -229,34 +229,6 @@ gst_aavd_decrypt_append_if_not_duplicate(GstCaps *dest, GstStructure *new_struct
   gst_caps_append_structure (dest, new_struct);
 }
 
-/* filter out the audio and video related fields from the up-stream caps,
-   because they are not relevant to the input caps of this element and
-   can cause caps negotiation failures with adaptive bitrate streams */
-static void
-gst_aavd_remove_codec_fields (GstStructure *gs)
-{
-  gint j = gst_structure_n_fields (gs) - 1;
-  for (; j >= 0; --j) {
-    const gchar *field_name;
-
-    field_name = gst_structure_nth_field_name (gs, j);
-    GST_TRACE ("Check field \"%s\" for removal", field_name);
-
-    if( g_strcmp0 (field_name, "base-profile") == 0 ||
-        g_strcmp0 (field_name, "codec_data") == 0 ||
-        g_strcmp0 (field_name, "height") == 0 ||
-        g_strcmp0 (field_name, "framerate") == 0 ||
-        g_strcmp0 (field_name, "level") == 0 ||
-        g_strcmp0 (field_name, "pixel-aspect-ratio") == 0 ||
-        g_strcmp0 (field_name, "profile") == 0 ||
-        g_strcmp0 (field_name, "rate") == 0 ||
-        g_strcmp0 (field_name, "width") == 0 ) {
-      gst_structure_remove_field (gs, field_name);
-      GST_TRACE ("Removing field %s", field_name);
-    }
-  }
-}
-
 /*
   Given the pad in this direction and the given caps, what caps are allowed on
   the other pad in this element ?
@@ -292,37 +264,36 @@ gst_aavd_decrypt_transform_caps (GstBaseTransform * base,
         continue;
 
       out = gst_structure_copy (in);
-      n_fields = gst_structure_n_fields (in);
-
       gst_structure_set_name (out,
           gst_structure_get_string (out, "original-media-type"));
 
       /* filter out the DRM related fields from the down-stream caps */
-      for(j=n_fields-1; j>=0; --j){
-          const gchar *field_name;
+      n_fields = gst_structure_n_fields (in);
+      for (j = n_fields - 1; j >= 0; --j) {
+        const gchar *field_name = gst_structure_nth_field_name (in, j);
 
-          field_name = gst_structure_nth_field_name (in, j);
-
-          if (g_str_has_prefix(field_name, "original-media-type") ) {
-              gst_structure_remove_field (out, field_name);
-          }
+        if (g_str_has_prefix(field_name, "original-media-type") ) {
+          gst_structure_remove_field (out, field_name);
+        }
       }
-      gst_aavd_decrypt_append_if_not_duplicate(res, out);
     } else {                    /* GST_PAD_SRC */
       out = gst_structure_copy (in);
-      gst_aavd_remove_codec_fields (out);
 
       /* filter out the audio/video related fields from the down-stream
          caps, because they are not relevant to the input caps of this
          element and they can cause caps negotiation failures with
          adaptive bitrate streams */
+      gst_structure_remove_fields (out, "base-profile",
+          "codec_data", "height", "framerate", "level", "pixel-aspect-ratio",
+          "profile", "rate", "width", NULL);
+
       gst_structure_set (out,
                          "original-media-type", G_TYPE_STRING, gst_structure_get_name (in),
                          NULL);
       gst_structure_set_name (out, "application/x-aavd");
-      gst_aavd_decrypt_append_if_not_duplicate(res, out);
-
     }
+
+    gst_aavd_decrypt_append_if_not_duplicate(res, out);
   }
   if(direction == GST_PAD_SINK && gst_caps_get_size (res)==0){
     gst_caps_unref (res);
