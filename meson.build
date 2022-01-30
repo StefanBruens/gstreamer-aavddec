@@ -1,5 +1,5 @@
 
-project('gst-aavddec', 'c', version : '0.1', license : 'LGPL')
+project('gst-aavddec', 'c', version : '0.1.1', license : 'LGPL')
 
 plugins_install_dir = join_paths(get_option('libdir'), 'gstreamer-1.0')
 
